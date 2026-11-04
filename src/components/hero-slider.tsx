@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/lib/language-context";
-import { API_BASE } from "@/lib/admin-api";
+import { API_BASE, resolveApiMediaUrl } from "@/lib/admin-api";
 
 export type HeroSlide = {
   id?: string;
@@ -39,17 +39,6 @@ const DEFAULT_SLIDES: HeroSlide[] = [
   },
 ];
 
-const resolveImageUrl = (value: unknown) => {
-  if (!value) return "";
-  try {
-    const origin = new URL(API_BASE).origin;
-    const url = new URL(String(value), origin);
-    return url.pathname.startsWith("/uploads/") ? `${origin}${url.pathname}` : url.toString();
-  } catch {
-    return String(value);
-  }
-};
-
 export default function HeroSlider() {
   const [slides, setSlides] = useState<HeroSlide[]>(DEFAULT_SLIDES);
   const [index, setIndex] = useState(0);
@@ -66,7 +55,7 @@ export default function HeroSlider() {
         if (payload.success && Array.isArray(payload.data) && payload.data.length > 0) {
           const fetchedSlides: HeroSlide[] = payload.data.map((row: Record<string, unknown>) => ({
             id: String(row.id ?? ""),
-            img: resolveImageUrl(row.imageUrl ?? row.image_url),
+            img: resolveApiMediaUrl(row.imageUrl ?? row.image_url) || "",
             text: String(row.text ?? ""),
             textAm: String(row.textAm ?? row.text_am ?? row.text ?? ""),
             author: String(row.author ?? ""),
@@ -175,4 +164,3 @@ export default function HeroSlider() {
     </section>
   );
 }
-

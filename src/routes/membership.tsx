@@ -24,22 +24,14 @@ import {
   parsePhoneNumberFromString,
   type CountryCode,
 } from "libphonenumber-js";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/membership")({
-  head: () => ({
-    meta: [
-      { title: "Membership — EMWA" },
-      {
-        name: "description",
-        content:
-          "Join the Ethiopian Media Women Association. Explore benefits, membership categories, eligibility, and apply online.",
-      },
-      { property: "og:title", content: "Membership — EMWA" },
-      {
-        property: "og:description",
-        content: "A stronger media starts with women who stand together.",
-      },
-    ],
+  head: () => createSeoHead({
+    title: "Membership — Ethiopian Media Women Association (EMWA)",
+    description: "Join EMWA: review membership categories, eligibility, fees, benefits, and apply to connect with women media professionals across Ethiopia.",
+    path: "/membership",
+    breadcrumbs: [{ name: "Membership", path: "/membership" }],
   }),
   component: Membership,
 });

@@ -24,6 +24,7 @@ import { useLanguage } from "@/lib/language-context";
 import { verifyDonation, type VerifyDonationResult } from "@/lib/donation.functions";
 import { toast } from "sonner";
 import logo from "@/assets/emwa-logo-new.png";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/thank-you")({
   validateSearch: (search: Record<string, unknown>): {
@@ -49,12 +50,11 @@ export const Route = createFileRoute("/thank-you")({
       anon: isAnon ? "1" : (typeof search.anon === "string" ? search.anon : undefined),
     };
   },
-  head: () => ({
-    meta: [
-      { title: "Donation Receipt — Ethiopian Media Women Association" },
-      { name: "description", content: "Thank you for supporting the Ethiopian Media Women Association." },
-      { property: "og:title", content: "Donation Receipt — EMWA" },
-    ],
+  head: () => createSeoHead({
+    title: "Thank You — Ethiopian Media Women Association",
+    description: "Thank you for supporting the Ethiopian Media Women Association.",
+    path: "/thank-you",
+    noIndex: true,
   }),
   component: ThankYouPage,
 });

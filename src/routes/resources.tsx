@@ -4,12 +4,15 @@ import { ArrowRight, ArrowUpRight, BookOpen, Download, FileCheck2, Search } from
 import { PageShell } from "@/components/page-shell";
 import { API_BASE } from "@/lib/admin-api";
 import { useLanguage } from "@/lib/language-context";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/resources")({
-  head: () => ({ meta: [
-    { title: "Resource Center — EMWA" },
-    { name: "description", content: "Research, reports, practical toolkits, and policy resources from the Ethiopian Media Women Association." },
-  ] }),
+  head: () => createSeoHead({
+    title: "Resources & Publications — Ethiopian Media Women Association",
+    description: "Browse reports, research, magazines, practical toolkits, and policy resources published by the Ethiopian Media Women Association.",
+    path: "/resources",
+    breadcrumbs: [{ name: "Resources", path: "/resources" }],
+  }),
   component: Resources,
 });
 
@@ -234,4 +237,3 @@ function Resources() {
 function Empty({ title, message }: { title: string; message?: string }) {
   return <div className="resources-empty" role="status"><BookOpen /><h3>{title}</h3>{message && <p>{message}</p>}</div>;
 }
-

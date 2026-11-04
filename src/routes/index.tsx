@@ -8,9 +8,10 @@ import StrategicAlliances from "@/components/strategic-alliances";
 import InspirationalQuotes from "@/components/inspirational-quotes";
 import { CountUp } from "@/components/count-up";
 import { useLanguage } from "@/lib/language-context";
+import { createSeoHead, updateArticleSlug } from "@/lib/seo";
+import newsroomImage from "@/assets/newsroom.jpg";
 import {
   ArrowUpRight,
-  ArrowDown,
   Radio,
   Globe2,
   Newspaper,
@@ -26,18 +27,9 @@ import {
   MessageCircleQuestion,
 } from "lucide-react";
 import heroJournalist from "@/assets/hero-journalist.jpg";
-import emwaGroupPhoto from "@/assets/emwa-group-photo.png";
+import emwaGroupPhoto from "@/assets/emwa-group-photo.webp";
 
-// Landing-page placeholder images. Replace any `src` value here to update the
-// corresponding image without changing the page layout.
-const LANDING_IMAGES = {
-  hero: {
-    src: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=1800&q=85",
-    alt: "Confident African woman representing women working in media",
-  },
-} as const;
-
-import { API_BASE } from "@/lib/admin-api";
+import { API_BASE, resolveApiMediaUrl } from "@/lib/admin-api";
 
 const FAQS = [
   [
@@ -62,6 +54,14 @@ const AMHARIC_FAQS = [
 ] as const;
 
 export const Route = createFileRoute("/")({
+  head: () =>
+    createSeoHead({
+      title: "Ethiopian Media Women Association (EMWA) | Women in Ethiopian Media",
+      description:
+        "The Ethiopian Media Women Association (EMWA Ethiopia) advances gender equality in media through advocacy, training, membership, and a nationwide network of women journalists and media professionals.",
+      path: "/",
+      breadcrumbs: [{ name: "Home", path: "/" }],
+    }),
   component: Home,
 });
 
@@ -81,11 +81,18 @@ type HomeExpert = {
 };
 
 type HomeUpdate = {
+  id?: string;
   slug: string;
   date: string;
   title: string;
+  titleAm?: string;
   excerpt: string;
+  excerptAm?: string;
+  image?: string;
+  language: "en" | "am";
 };
+
+const containsAmharic = (text: string) => /[\u1200-\u137f]/u.test(text);
 
 type HeroSlide = {
   id?: string;
@@ -117,7 +124,7 @@ const DEFAULT_HERO_SLIDES: HeroSlide[] = [
     roleAm: "አዲስ አበባ፣ 1998 ዓ.ም",
   },
   {
-    img: emwaGroupPhoto,
+    img: heroJournalist,
     title: "A Nationwide Community.",
     titleAm: "አገር አቀፍ ማህበረሰብ።",
     description: "Connecting journalists, editors, communicators, and media leaders across all regions of Ethiopia.",
@@ -134,10 +141,11 @@ function HomeHero({ t, language }: { t: (english: string, amharic: string) => st
   const [slides, setSlides] = useState<HeroSlide[]>(DEFAULT_HERO_SLIDES);
   const [slideIndex, setSlideIndex] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
-  const [autoPlay, setAutoPlay] = useState(true);
   const [loopKey, setLoopKey] = useState(0);
-  const INTERVAL_MS = 4500; // 4.5 seconds per slide (faster auto-rotation)
+  const [resettingLoop, setResettingLoop] = useState(false);
+  const INTERVAL_MS = 3000; // 3 seconds per slide
   const EXIT_MS     = 350;  // fast crisp transition
+  const SLIDE_MS    = 700;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -150,22 +158,11 @@ function HomeHero({ t, language }: { t: (english: string, amharic: string) => st
         if (!response.ok) return;
         const payload = await response.json();
         if (payload.success && Array.isArray(payload.data) && payload.data.length > 0) {
-          const apiOrigin = new URL(API_BASE).origin;
           const fetchedSlides: HeroSlide[] = payload.data.map((row: Record<string, unknown>) => {
-            const rawImg = String(row.imageUrl ?? row.image_url ?? "");
-            let img = rawImg;
-            try {
-              if (rawImg.startsWith("/uploads/")) {
-                img = `${apiOrigin}${rawImg}`;
-              } else if (!rawImg.startsWith("http://") && !rawImg.startsWith("https://") && !rawImg.startsWith("/")) {
-                img = `${apiOrigin}/${rawImg}`;
-              }
-            } catch {
-              img = rawImg;
-            }
+            const rawImg = row.imageUrl ?? row.image_url;
             return {
               id: String(row.id ?? ""),
-              img: img || heroJournalist,
+              img: resolveApiMediaUrl(rawImg) || heroJournalist,
               title: row.title ? String(row.title) : undefined,
               titleAm: (row.titleAm ?? row.title_am) ? String(row.titleAm ?? row.title_am) : undefined,
               description: (row.description ?? row.description_text) ? String(row.description ?? row.description_text) : undefined,
@@ -192,27 +189,42 @@ function HomeHero({ t, language }: { t: (english: string, amharic: string) => st
   const currentSlide = activeSlides[slideIndex % activeSlides.length];
 
   const goToSlide = (nextIndex: number) => {
-    if (isExiting || nextIndex === slideIndex) return;
+    const targetIndex = (nextIndex + activeSlides.length) % activeSlides.length;
+    if (isExiting || targetIndex === slideIndex) return;
     setIsExiting(true);
     setTimeout(() => {
-      setSlideIndex((nextIndex + activeSlides.length) % activeSlides.length);
+      setSlideIndex(
+        slideIndex === activeSlides.length - 1 && targetIndex === 0
+          ? activeSlides.length
+          : targetIndex,
+      );
       setIsExiting(false);
       setLoopKey((k) => k + 1);
     }, EXIT_MS);
   };
 
   useEffect(() => {
-    if (!autoPlay || activeSlides.length <= 1) return;
+    if (activeSlides.length <= 1) return;
     const id = setInterval(() => {
       setIsExiting(true);
       setTimeout(() => {
         setIsExiting(false);
-        setSlideIndex((i) => (i + 1) % activeSlides.length);
+        setSlideIndex((i) => i + 1);
         setLoopKey((k) => k + 1);
       }, EXIT_MS);
     }, INTERVAL_MS);
     return () => clearInterval(id);
-  }, [activeSlides.length, autoPlay]);
+  }, [activeSlides.length]);
+
+  useEffect(() => {
+    if (slideIndex !== activeSlides.length) return;
+    const id = setTimeout(() => {
+      setResettingLoop(true);
+      setSlideIndex(0);
+      requestAnimationFrame(() => setResettingLoop(false));
+    }, SLIDE_MS);
+    return () => clearTimeout(id);
+  }, [activeSlides.length, slideIndex]);
 
   // ── Premium easing curves ──────────────────────────────────────────────────
   const EASE_ENTER = "cubic-bezier(0.16, 1, 0.3, 1)";
@@ -221,24 +233,6 @@ function HomeHero({ t, language }: { t: (english: string, amharic: string) => st
   const exitTransition = isExiting
     ? `opacity ${EXIT_MS}ms ${EASE_EXIT}, transform ${EXIT_MS}ms ${EASE_EXIT}, filter ${EXIT_MS}ms ${EASE_EXIT}`
     : "none";
-
-  const imgStyle: React.CSSProperties = {
-    position: "absolute",
-    inset: 0,
-    width: "100%",
-    height: "100%",
-    objectFit: "contain",
-    objectPosition: "center",
-    padding: "clamp(1rem, 2.5vw, 2.5rem)",
-    opacity:   isExiting ? 0 : 1,
-    transform: isExiting ? "scale(0.94)" : "scale(1)",
-    filter:    isExiting ? "blur(6px) saturate(0.4)" : "blur(0px) saturate(1)",
-    transition: exitTransition,
-    animation: isExiting
-      ? "none"
-      : `hero-enter-img 0.9s ${EASE_ENTER} both, ken-burns 16s ease-in-out 0.9s infinite alternate`,
-    willChange: "transform, opacity, filter",
-  };
 
   const textStyle: React.CSSProperties = {
     opacity:    isExiting ? 0 : 1,
@@ -251,23 +245,9 @@ function HomeHero({ t, language }: { t: (english: string, amharic: string) => st
   return (
     <>
       <style>{`
-        @keyframes hero-enter-img {
-          0%   { opacity: 0; transform: scale(1.06) translateY(8px);  filter: blur(8px) saturate(0.3); }
-          60%  { opacity: 1; filter: blur(1px) saturate(0.85); }
-          100% { opacity: 1; transform: scale(1)    translateY(0);    filter: blur(0px) saturate(1); }
-        }
-
         @keyframes hero-enter-text {
           0%   { opacity: 0; transform: translateY(20px) scale(0.97); filter: blur(4px); }
           100% { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0px); }
-        }
-
-        @keyframes ken-burns {
-          0%   { transform: scale(1.00) translate(0,     0);    }
-          25%  { transform: scale(1.04) translate(-0.8%, 0.3%); }
-          50%  { transform: scale(1.06) translate(0.3%,  -0.6%);}
-          75%  { transform: scale(1.04) translate(-0.4%, 0.5%); }
-          100% { transform: scale(1.07) translate(0.2%,  0.8%); }
         }
 
         @keyframes hero-progress {
@@ -300,26 +280,58 @@ function HomeHero({ t, language }: { t: (english: string, amharic: string) => st
       <section
         className="home-hero-slider relative group"
         aria-label="EMWA Hero Slider"
-        onMouseEnter={() => setAutoPlay(false)}
-        onMouseLeave={() => setAutoPlay(true)}
       >
         {/* Image / Visual Side */}
         <div
           className="home-hero-visual relative"
           style={{ background: "linear-gradient(145deg, #171310, #2b211b)" }}
         >
-          <img
-            key={loopKey}
-            src={currentSlide.img}
-            alt={currentSlide.author || "EMWA"}
-            width={1200}
-            height={1600}
-            style={imgStyle}
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = "/Fitsum%20Alemayehu.png";
+          <div
+            className="home-hero-image-track"
+            style={{
+              display: "flex",
+              width: `${(activeSlides.length + 1) * 100}%`,
+              height: "100%",
+              transform: `translateX(-${(slideIndex * 100) / (activeSlides.length + 1)}%)`,
+              transition: resettingLoop
+                ? "none"
+                : `transform ${SLIDE_MS}ms cubic-bezier(0.22, 0.61, 0.36, 1)`,
+              willChange: "transform",
             }}
-          />
+          >
+            {[...activeSlides, activeSlides[0]].map((slide, index) => (
+              <div
+                key={`${slide.id || "hero-slide"}-${index}`}
+                style={{
+                  position: "relative",
+                  flex: `0 0 ${100 / (activeSlides.length + 1)}%`,
+                  height: "100%",
+                  overflow: "hidden",
+                }}
+              >
+                <img
+                  src={slide.img}
+                  alt={slide.author || "EMWA"}
+                  width={1200}
+                  height={1600}
+                  className={index % activeSlides.length === slideIndex % activeSlides.length ? "is-active" : ""}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                    objectPosition: "center",
+                    padding: "clamp(1rem, 2.5vw, 2.5rem)",
+                  }}
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = heroJournalist;
+                  }}
+                />
+              </div>
+            ))}
+          </div>
 
           {/* Slide Arrow Navigation Overlay */}
           {activeSlides.length > 1 && (
@@ -352,7 +364,7 @@ function HomeHero({ t, language }: { t: (english: string, amharic: string) => st
           aria-live="polite"
         >
           <p className="label-mono text-primary">
-            EMWA legacy · {language === "am" ? (currentSlide.roleAm || currentSlide.role) : currentSlide.role}
+            Ethiopian Media Women Association (EMWA) · {language === "am" ? (currentSlide.roleAm || currentSlide.role) : currentSlide.role}
           </p>
 
           <h1 className="is-tribute">
@@ -417,6 +429,96 @@ function HomeHero({ t, language }: { t: (english: string, amharic: string) => st
   );
 }
 
+function NewsroomSection({
+  updates,
+  language,
+  t,
+}: {
+  updates: HomeUpdate[];
+  language: string;
+  t: (english: string, amharic: string) => string;
+}) {
+  const visibleUpdates = updates
+    .filter((update) => update.language === language)
+    .slice(0, 3);
+
+  return (
+    <section className="py-24 md:py-32 bg-muted/40 border-y border-border">
+      <div className="max-w-[1400px] mx-auto px-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
+          <div>
+            <p className="label-mono text-primary mb-4">{t("Latest Dispatches", "የቅርብ ጊዜ መረጃዎች")}</p>
+            <h2 className="font-display text-5xl md:text-7xl tracking-tighter leading-none">
+              {t("Newsroom", "የዜና ክፍል")}
+            </h2>
+          </div>
+          <Link
+            to="/updates"
+            hash="news"
+            className="label-mono border-b border-foreground pb-1 hover:text-primary hover:border-primary transition-all"
+          >
+            {t("All stories", "ሁሉም ታሪኮች")} →
+          </Link>
+        </div>
+        {visibleUpdates.length > 0 && (
+          <div className="grid md:grid-cols-3 gap-px bg-border">
+            {visibleUpdates.map((update) => (
+              <a
+                key={update.slug}
+                href={
+                  update.slug.trim() && update.title.trim()
+                    ? `/updates/${encodeURIComponent(updateArticleSlug(update.slug, update.title, update.id))}`
+                    : `/updates?story=${encodeURIComponent(update.slug)}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block no-underline"
+              >
+                <article className="h-full bg-background hover:bg-muted/50 transition-colors cursor-pointer">
+                  <img
+                    src={update.image || newsroomImage}
+                    alt={update.title}
+                    loading="lazy"
+                    className="aspect-[16/9] w-full object-cover"
+                    onError={(event) => {
+                      if (event.currentTarget.dataset.fallback !== "true") {
+                        event.currentTarget.dataset.fallback = "true";
+                        event.currentTarget.src = newsroomImage;
+                      }
+                    }}
+                  />
+                  <div className="p-8">
+                    <div className="flex justify-between label-mono text-muted-foreground mb-6">
+                      <span>
+                        {new Intl.DateTimeFormat(language === "am" ? "am-ET" : "en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        }).format(new Date(update.date))}
+                      </span>
+                      <span className="text-primary">{t("Update", "ዜና")}</span>
+                    </div>
+                    <h3 className="font-display text-2xl leading-tight mb-4">
+                      {language === "am" ? update.titleAm || update.title : update.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {language === "am" ? update.excerptAm || update.excerpt : update.excerpt}
+                    </p>
+                    <div className="mt-6 label-mono inline-flex items-center gap-1 group text-primary font-bold">
+                      {t("Read", "ያንብቡ")}{" "}
+                      <ArrowUpRight className="size-3 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </article>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function Home() {
   const { language, t } = useLanguage();
   const [newsletterStatus, setNewsletterStatus] = useState<
@@ -427,7 +529,6 @@ function Home() {
   const [experts, setExperts] = useState<HomeExpert[]>([]);
   const [expertsLoading, setExpertsLoading] = useState(true);
   const [updates, setUpdates] = useState<HomeUpdate[]>([]);
-  const [updatesLoading, setUpdatesLoading] = useState(true);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -467,28 +568,29 @@ function Home() {
     const controller = new AbortController();
     void (async () => {
       try {
-        const response = await fetch(`${API_BASE}/public/updates?page=1&limit=3&type=NEWS`, {
+        const response = await fetch(`${API_BASE}/public/updates?page=1&limit=100`, {
           signal: controller.signal,
         });
         if (!response.ok) throw new Error("Unable to load updates");
         const payload = await response.json();
-        const rows = Array.isArray(payload?.data) ? payload.data : [];
+        const rows: Record<string, unknown>[] = Array.isArray(payload?.data)
+          ? payload.data.filter((row: Record<string, unknown>) => row.content_type === "NEWS")
+          : [];
         setUpdates(
-          rows.map((row: Record<string, unknown>) => ({
+          rows.map((row) => ({
+            id: row.id ? String(row.id) : undefined,
             slug: String(row.slug),
-            date: new Intl.DateTimeFormat("en-GB", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            }).format(new Date(String(row.published_at ?? row.created_at))),
-            title: String(row.title ?? "EMWA update"),
+            date: String(row.published_at ?? row.created_at),
+            title: String(row.title ?? ""),
+            titleAm: row.titleAm || row.title_am ? String(row.titleAm ?? row.title_am) : undefined,
             excerpt: String(row.excerpt ?? ""),
+            excerptAm: row.excerptAm || row.excerpt_am ? String(row.excerptAm ?? row.excerpt_am) : undefined,
+            image: resolveApiMediaUrl(row.featured_image_url),
+            language: containsAmharic(String(row.title ?? "")) ? "am" : "en",
           })),
         );
       } catch (error) {
         if (!(error instanceof DOMException && error.name === "AbortError")) setUpdates([]);
-      } finally {
-        if (!controller.signal.aborted) setUpdatesLoading(false);
       }
     })();
     return () => controller.abort();
@@ -525,51 +627,7 @@ function Home() {
     <PageShell>
       {/* HERO */}
       <HomeHero t={t} language={language} />
-      {false && (
-        <section className="relative flex flex-col md:flex-row min-h-[calc(100svh-65px)] border-b border-border">
-          <div className="md:w-7/12 relative order-2 md:order-1 overflow-hidden min-h-[42svh] md:min-h-0 bg-muted">
-            <img
-              src={LANDING_IMAGES.hero.src}
-              alt={LANDING_IMAGES.hero.alt}
-              width={1800}
-              height={1200}
-              fetchPriority="high"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1.5s] hover:scale-[1.02]"
-            />
-          </div>
-          <div className="md:w-5/12 flex flex-col justify-center px-5 py-14 sm:px-8 md:p-12 lg:p-16 xl:p-20 order-1 md:order-2">
-            <p className="label-mono text-primary mb-6 animate-reveal">{t("Est. 1998 · Addis Ababa", "ተመሠረተ 1998 · አዲስ አበባ")}</p>
-            <h1 className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl leading-[0.88] tracking-tighter mb-7 md:mb-8 text-balance animate-reveal">
-              {t("The Voice", "የኢትዮጵያ")}<br />
-              {t("of Ethiopia's", "ፈር ቀዳጅ")}<br />
-              <span className="text-secondary">{t("Vanguard", "የሴቶች ድምፅ")}</span>
-            </h1>
-            <p className="text-lg leading-snug max-w-md text-muted-foreground animate-reveal">
-              {t(
-                "Empowering Ethiopian women in media through strategic advocacy, professional development, and a collective roar that echoes across the Horn of Africa.",
-                "በስትራቴጂያዊ ቅስቀሳ፣ በሙያ ማበልጸግና በጋራ ድምፅ በሚዲያ ውስጥ የሚሠሩ ኢትዮጵያዊ ሴቶችን እናበረታታለን።",
-              )}
-            </p>
-            <div className="mt-10 flex flex-wrap gap-3 animate-reveal">
-              <Link
-                to="/membership"
-                className="bg-foreground text-background px-6 py-3 label-mono hover:bg-primary transition-colors inline-flex items-center gap-2"
-              >
-                {t("Become a member", "አባል ይሁኑ")} <ArrowUpRight className="size-3" />
-              </Link>
-              <Link
-                to="/programs"
-                className="border border-foreground px-6 py-3 label-mono hover:bg-foreground hover:text-background transition-colors"
-              >
-                {t("Explore programs", "ፕሮግራሞችን ይመልከቱ")}
-              </Link>
-            </div>
-            <div className="mt-10 lg:mt-16 hidden md:flex items-center gap-3 label-mono text-muted-foreground animate-reveal">
-              <ArrowDown className="size-3 animate-bounce" /> {t("Scroll", "ወደ ታች ይሂዱ")}
-            </div>
-          </div>
-        </section>
-      )}
+      <NewsroomSection updates={updates} language={language} t={t} />
 
       {/* WOMEN NEWS FEED (YouTube) */}
       <YoutubeNewsFeed />
@@ -688,57 +746,6 @@ function Home() {
               >
                 {t("Join the expert directory", "የባለሙያዎች ማውጫውን ይቀላቀሉ")} <ArrowUpRight className="ml-2 size-4" />
               </Link>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* NEWS */}
-      <section className="py-24 md:py-32 bg-muted/40 border-y border-border">
-        <div className="max-w-[1400px] mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
-            <div>
-              <p className="label-mono text-primary mb-4">{t("Latest Dispatches", "የቅርብ ጊዜ መረጃዎች")}</p>
-              <h2 className="font-display text-5xl md:text-7xl tracking-tighter leading-none">
-                {t("Newsroom", "የዜና ክፍል")}
-              </h2>
-            </div>
-            <Link
-              to="/updates"
-              hash="news"
-              className="label-mono border-b border-foreground pb-1 hover:text-primary hover:border-primary transition-all"
-            >
-              {t("All stories", "ሁሉም ታሪኮች")} →
-            </Link>
-          </div>
-          {updates.length > 0 ? (
-            <div className="grid md:grid-cols-3 gap-px bg-border">
-              {updates.map((n) => (
-                <a
-                  key={n.slug}
-                  href={`/updates?story=${encodeURIComponent(n.slug)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block no-underline"
-                >
-                  <article className="h-full bg-background p-8 hover:bg-muted/50 transition-colors cursor-pointer">
-                    <div className="flex justify-between label-mono text-muted-foreground mb-6">
-                      <span>{n.date}</span>
-                      <span className="text-primary">Update</span>
-                    </div>
-                    <h3 className="font-display text-2xl leading-tight mb-4">{n.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{n.excerpt}</p>
-                    <div className="mt-6 label-mono inline-flex items-center gap-1 group text-primary font-bold">
-                      {t("Read", "ያንብቡ")}{" "}
-                      <ArrowUpRight className="size-3 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </article>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <div className="border border-border bg-background px-8 py-12 text-center text-muted-foreground">
-              {updatesLoading ? "Loading the latest updates…" : "No published updates yet."}
             </div>
           )}
         </div>

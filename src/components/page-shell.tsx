@@ -1,6 +1,60 @@
 import type { ReactNode } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { SiteHeader } from "./site-header";
 import { SiteFooter } from "./site-footer";
+
+const BREADCRUMB_LABELS: Record<string, string> = {
+  about: "About",
+  contact: "Contact",
+  donate: "Donate",
+  experts: "Experts",
+  membership: "Membership",
+  partners: "Partners",
+  privacy: "Privacy policy",
+  programs: "Programs",
+  resources: "Resources",
+  search: "Search",
+  testimonials: "Testimonials",
+  terms: "Terms",
+  updates: "News and updates",
+  "voices-in-motion": "Voices in Motion",
+};
+
+function Breadcrumbs() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const segments = pathname.split("/").filter(Boolean);
+  if (!segments.length) return null;
+
+  const items = segments.map((segment, index) => ({
+    path: `/${segments.slice(0, index + 1).join("/")}`,
+    label:
+      BREADCRUMB_LABELS[segment] ??
+      decodeURIComponent(segment)
+        .replace(/-[a-f0-9]{8}$/i, "")
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (letter) => letter.toUpperCase()),
+  }));
+
+  return (
+    <nav className="seo-breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li>
+          <a href="/">Home</a>
+        </li>
+        {items.map((item, index) => (
+          <li key={item.path} aria-current={index === items.length - 1 ? "page" : undefined}>
+            <span aria-hidden="true">/</span>
+            {index === items.length - 1 ? (
+              <span>{item.label}</span>
+            ) : (
+              <a href={item.path}>{item.label}</a>
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
 
 export function PageShell({ children }: { children: ReactNode }) {
   return (
@@ -12,6 +66,7 @@ export function PageShell({ children }: { children: ReactNode }) {
         Skip to content
       </a>
       <SiteHeader />
+      <Breadcrumbs />
       <main id="main-content" className="flex-1">{children}</main>
       <SiteFooter />
     </div>

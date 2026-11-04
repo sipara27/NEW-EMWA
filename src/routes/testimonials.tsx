@@ -2,15 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageShell, PageHero } from "@/components/page-shell";
 import globalImg from "@/assets/emwa-replace.jpg";
 import { Play } from "lucide-react";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/testimonials")({
-  head: () => ({
-    meta: [
-      { title: "Testimonials & Success Stories — EMWA" },
-      { name: "description", content: "Member stories, partner testimonials, and community impact from the Ethiopian Media Women Association." },
-      { property: "og:title", content: "Testimonials & Success Stories — EMWA" },
-      { property: "og:description", content: "Member and partner stories of impact from EMWA." },
-    ],
+  head: () => createSeoHead({
+    title: "Member Stories & Testimonials — Ethiopian Media Women Association",
+    description: "Read member and partner stories about the Ethiopian Media Women Association's impact on women in media and their communities.",
+    path: "/testimonials",
+    breadcrumbs: [{ name: "Testimonials", path: "/testimonials" }],
   }),
   component: Testimonials,
 });

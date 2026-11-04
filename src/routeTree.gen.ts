@@ -29,6 +29,8 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UpdatesSlugRouteImport } from './routes/updates.$slug'
+import { Route as ExpertsSlugRouteImport } from './routes/experts.$slug'
 
 const VoicesInMotionRoute = VoicesInMotionRouteImport.update({
   id: '/voices-in-motion',
@@ -130,6 +132,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UpdatesSlugRoute = UpdatesSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => UpdatesRoute,
+} as any)
+const ExpertsSlugRoute = ExpertsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ExpertsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -138,7 +150,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/donate': typeof DonateRoute
   '/events': typeof EventsRoute
-  '/experts': typeof ExpertsRoute
+  '/experts': typeof ExpertsRouteWithChildren
   '/membership': typeof MembershipRoute
   '/news': typeof NewsRoute
   '/partners': typeof PartnersRoute
@@ -150,8 +162,10 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/testimonials': typeof TestimonialsRoute
   '/thank-you': typeof ThankYouRoute
-  '/updates': typeof UpdatesRoute
+  '/updates': typeof UpdatesRouteWithChildren
   '/voices-in-motion': typeof VoicesInMotionRoute
+  '/experts/$slug': typeof ExpertsSlugRoute
+  '/updates/$slug': typeof UpdatesSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -160,7 +174,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/donate': typeof DonateRoute
   '/events': typeof EventsRoute
-  '/experts': typeof ExpertsRoute
+  '/experts': typeof ExpertsRouteWithChildren
   '/membership': typeof MembershipRoute
   '/news': typeof NewsRoute
   '/partners': typeof PartnersRoute
@@ -172,8 +186,10 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/testimonials': typeof TestimonialsRoute
   '/thank-you': typeof ThankYouRoute
-  '/updates': typeof UpdatesRoute
+  '/updates': typeof UpdatesRouteWithChildren
   '/voices-in-motion': typeof VoicesInMotionRoute
+  '/experts/$slug': typeof ExpertsSlugRoute
+  '/updates/$slug': typeof UpdatesSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -183,7 +199,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/donate': typeof DonateRoute
   '/events': typeof EventsRoute
-  '/experts': typeof ExpertsRoute
+  '/experts': typeof ExpertsRouteWithChildren
   '/membership': typeof MembershipRoute
   '/news': typeof NewsRoute
   '/partners': typeof PartnersRoute
@@ -195,8 +211,10 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/testimonials': typeof TestimonialsRoute
   '/thank-you': typeof ThankYouRoute
-  '/updates': typeof UpdatesRoute
+  '/updates': typeof UpdatesRouteWithChildren
   '/voices-in-motion': typeof VoicesInMotionRoute
+  '/experts/$slug': typeof ExpertsSlugRoute
+  '/updates/$slug': typeof UpdatesSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -221,6 +239,8 @@ export interface FileRouteTypes {
     | '/thank-you'
     | '/updates'
     | '/voices-in-motion'
+    | '/experts/$slug'
+    | '/updates/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -243,6 +263,8 @@ export interface FileRouteTypes {
     | '/thank-you'
     | '/updates'
     | '/voices-in-motion'
+    | '/experts/$slug'
+    | '/updates/$slug'
   id:
     | '__root__'
     | '/'
@@ -265,6 +287,8 @@ export interface FileRouteTypes {
     | '/thank-you'
     | '/updates'
     | '/voices-in-motion'
+    | '/experts/$slug'
+    | '/updates/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -274,7 +298,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   DonateRoute: typeof DonateRoute
   EventsRoute: typeof EventsRoute
-  ExpertsRoute: typeof ExpertsRoute
+  ExpertsRoute: typeof ExpertsRouteWithChildren
   MembershipRoute: typeof MembershipRoute
   NewsRoute: typeof NewsRoute
   PartnersRoute: typeof PartnersRoute
@@ -286,7 +310,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   TestimonialsRoute: typeof TestimonialsRoute
   ThankYouRoute: typeof ThankYouRoute
-  UpdatesRoute: typeof UpdatesRoute
+  UpdatesRoute: typeof UpdatesRouteWithChildren
   VoicesInMotionRoute: typeof VoicesInMotionRoute
 }
 
@@ -432,8 +456,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/updates/$slug': {
+      id: '/updates/$slug'
+      path: '/$slug'
+      fullPath: '/updates/$slug'
+      preLoaderRoute: typeof UpdatesSlugRouteImport
+      parentRoute: typeof UpdatesRoute
+    }
+    '/experts/$slug': {
+      id: '/experts/$slug'
+      path: '/$slug'
+      fullPath: '/experts/$slug'
+      preLoaderRoute: typeof ExpertsSlugRouteImport
+      parentRoute: typeof ExpertsRoute
+    }
   }
 }
+
+interface ExpertsRouteChildren {
+  ExpertsSlugRoute: typeof ExpertsSlugRoute
+}
+
+const ExpertsRouteChildren: ExpertsRouteChildren = {
+  ExpertsSlugRoute: ExpertsSlugRoute,
+}
+
+const ExpertsRouteWithChildren =
+  ExpertsRoute._addFileChildren(ExpertsRouteChildren)
+
+interface UpdatesRouteChildren {
+  UpdatesSlugRoute: typeof UpdatesSlugRoute
+}
+
+const UpdatesRouteChildren: UpdatesRouteChildren = {
+  UpdatesSlugRoute: UpdatesSlugRoute,
+}
+
+const UpdatesRouteWithChildren =
+  UpdatesRoute._addFileChildren(UpdatesRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -442,7 +502,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   DonateRoute: DonateRoute,
   EventsRoute: EventsRoute,
-  ExpertsRoute: ExpertsRoute,
+  ExpertsRoute: ExpertsRouteWithChildren,
   MembershipRoute: MembershipRoute,
   NewsRoute: NewsRoute,
   PartnersRoute: PartnersRoute,
@@ -454,7 +514,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   TestimonialsRoute: TestimonialsRoute,
   ThankYouRoute: ThankYouRoute,
-  UpdatesRoute: UpdatesRoute,
+  UpdatesRoute: UpdatesRouteWithChildren,
   VoicesInMotionRoute: VoicesInMotionRoute,
 }
 export const routeTree = rootRouteImport

@@ -48,10 +48,14 @@ import {
   logoutAdmin,
   type ApplicationStatus,
 } from "@/lib/admin-api";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({
-    meta: [{ title: "Administration — EMWA" }, { name: "robots", content: "noindex,nofollow" }],
+  head: () => createSeoHead({
+    title: "Administration — EMWA",
+    description: "Private administration area.",
+    path: "/admin",
+    robots: "noindex,nofollow",
   }),
   component: AdminPage,
 });

@@ -1,15 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageShell, PageHero } from "@/components/page-shell";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/privacy")({
-  head: () => ({
-    meta: [
-      { title: "Privacy Policy — EMWA" },
-      { name: "description", content: "How the Ethiopian Media Women Association collects, uses, and protects personal information." },
-      { property: "og:title", content: "Privacy Policy — EMWA" },
-      { property: "og:description", content: "EMWA's privacy policy and data handling practices." },
-      { name: "robots", content: "noindex" },
-    ],
+  head: () => createSeoHead({
+    title: "Privacy Policy — Ethiopian Media Women Association",
+    description: "Read how the Ethiopian Media Women Association collects, uses, stores, and protects personal information on its website and services.",
+    path: "/privacy",
+    breadcrumbs: [{ name: "Privacy policy", path: "/privacy" }],
   }),
   component: Privacy,
 });

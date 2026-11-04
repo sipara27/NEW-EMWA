@@ -6,6 +6,27 @@ const normalizeApiBase = (rawUrl?: string) => {
 
 const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL);
 
+export const resolveApiMediaUrl = (value: unknown): string | undefined => {
+  if (value == null) return undefined;
+  const raw = String(value).trim();
+  if (!raw) return undefined;
+  if (/^(data|blob):/i.test(raw)) return raw;
+
+  try {
+    const apiUrl = new URL(API_BASE);
+    const mediaUrl = new URL(raw, apiUrl.origin);
+    const uploadPath = mediaUrl.pathname.match(/(?:\/api\/v1)?(\/uploads\/.+)$/i);
+    if (uploadPath) {
+      mediaUrl.protocol = apiUrl.protocol;
+      mediaUrl.host = apiUrl.host;
+      mediaUrl.pathname = uploadPath[1];
+    }
+    return mediaUrl.toString();
+  } catch {
+    return undefined;
+  }
+};
+
 export type AdminRole = "ADMIN" | "SUPER_ADMIN";
 export type ApplicationStatus = "PENDING" | "APPROVED" | "REJECTED";
 

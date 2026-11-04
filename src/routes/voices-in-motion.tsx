@@ -2,8 +2,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageShell } from "@/components/page-shell";
 import { useState, useEffect } from "react";
 import { ExternalLink, Volume2 } from "lucide-react";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/voices-in-motion")({
+  head: () => createSeoHead({
+    title: "Voices in Motion — Ethiopian Media Women Association",
+    description: "Explore media stories and voices from Ethiopian women journalists, broadcasters, and communicators.",
+    path: "/voices-in-motion",
+    breadcrumbs: [{ name: "Voices in Motion", path: "/voices-in-motion" }],
+  }),
   component: VoicesInMotion,
 });
 
