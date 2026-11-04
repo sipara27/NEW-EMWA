@@ -15,6 +15,12 @@ import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 import { LanguageProvider } from "../lib/language-context";
 import logoUrl from "../assets/emwa-logo-new.png?url";
+import {
+  DEFAULT_DESCRIPTION,
+  ORGANIZATION_ABBREVIATION,
+  ORGANIZATION_NAME,
+  organizationWebsiteSchema,
+} from "../lib/seo";
 
 function NotFoundComponent() {
   return (
@@ -110,33 +116,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "EMWA — Ethiopian Media Women Association" },
-      {
-        name: "description",
-        content:
-          "The Ethiopian Media Women Association (EMWA) empowers women in Ethiopian media through advocacy, professional development, and a nationwide network of journalists, editors, and communicators.",
-      },
-      { name: "author", content: "EMWA" },
-      { property: "og:site_name", content: "EMWA" },
-      { property: "og:title", content: "EMWA — Ethiopian Media Women Association" },
-      {
-        property: "og:description",
-        content:
-          "The Ethiopian Media Women Association (EMWA) empowers women in Ethiopian media through advocacy, professional development, and a nationwide network of journalists, editors, and communicators.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://ethmwa.org/" },
-      { property: "og:image", content: "https://ethmwa.org/emwa-logo-new.png" },
-      { property: "og:image:secure_url", content: "https://ethmwa.org/emwa-logo-new.png" },
-      { property: "og:image:type", content: "image/png" },
-      { property: "og:image:alt", content: "Ethiopian Media Women Association (EMWA)" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "EMWA — Ethiopian Media Women Association" },
-      { name: "twitter:description", content: "The Ethiopian Media Women Association (EMWA) empowers women in Ethiopian media through advocacy, professional development, and a nationwide network of journalists, editors, and communicators." },
-      { name: "twitter:image", content: "https://ethmwa.org/emwa-logo-new.png" },
+      { title: `${ORGANIZATION_NAME} (${ORGANIZATION_ABBREVIATION})` },
+      { name: "description", content: DEFAULT_DESCRIPTION },
+      { name: "author", content: ORGANIZATION_NAME },
+      { "script:ld+json": organizationWebsiteSchema },
     ],
     links: [
-      { rel: "canonical", href: "https://ethmwa.org/" },
       { rel: "icon", href: "/favicon.ico", sizes: "any" },
       { rel: "icon", type: "image/png", href: logoUrl },
       { rel: "apple-touch-icon", href: logoUrl },

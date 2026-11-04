@@ -16,14 +16,14 @@ import {
 import { PageShell } from "@/components/page-shell";
 import { API_BASE } from "@/lib/admin-api";
 import { useLanguage } from "@/lib/language-context";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/contact")({
-  head: () => ({
-    meta: [
-      { title: "Contact — EMWA" },
-      { name: "description", content: "Contact the Ethiopian Media Women Association." },
-      { property: "og:title", content: "Contact — EMWA" },
-    ],
+  head: () => createSeoHead({
+    title: "Contact EMWA — Ethiopian Media Women Association",
+    description: "Contact the Ethiopian Media Women Association in Addis Ababa about membership, programs, partnerships, media, and general enquiries.",
+    path: "/contact",
+    breadcrumbs: [{ name: "Contact", path: "/contact" }],
   }),
   component: Contact,
 });

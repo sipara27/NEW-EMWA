@@ -2,15 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { type CSSProperties, useState } from "react";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
-import heroImg from "@/assets/programs.png";
+import heroImg from "@/assets/programs.webp";
 import { useLanguage } from "@/lib/language-context";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/programs")({
-  head: () => ({ meta: [
-    { title: "Programs & Projects — EMWA" },
-    { name: "description", content: "Explore EMWA's seven strategic programs advancing women in Ethiopian media." },
-    { property: "og:title", content: "Programs & Projects — EMWA" },
-  ] }),
+  head: () => createSeoHead({
+    title: "Programs & Projects — Ethiopian Media Women Association",
+    description: "Explore Ethiopian Media Women Association programs for journalism training, safety, gender equality, media development, and professional advancement.",
+    path: "/programs",
+    breadcrumbs: [{ name: "Programs", path: "/programs" }],
+  }),
   component: Programs,
 });
 

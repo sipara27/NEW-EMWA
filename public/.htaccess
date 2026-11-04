@@ -3,7 +3,18 @@ DirectoryIndex index.html index.php
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+
+  RewriteCond %{HTTP_HOST} ^www\.ethmwa\.org$ [NC]
+  RewriteRule ^ https://ethmwa.org%{REQUEST_URI} [R=301,L,NE]
+
+  # Redirect plain HTTP requests to HTTPS at the origin.
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+  RewriteRule ^ https://ethmwa.org%{REQUEST_URI} [R=301,L,NE]
+
   RewriteRule ^index\.html$ - [L]
+  RewriteRule ^robots\.txt$ - [L]
+  RewriteRule ^sitemap\.xml$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]

@@ -11,16 +11,17 @@ import {
   X,
 } from "lucide-react";
 import { PageShell, PageHero } from "@/components/page-shell";
-import globalImg from "@/assets/emwa-group-photo.png";
+import globalImg from "@/assets/emwa-group-photo.webp";
 import { useLanguage } from "@/lib/language-context";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/about")({
-  head: () => ({ meta: [
-    { title: "About EMWA — Ethiopian Media Women Association" },
-    { name: "description", content: "Learn about EMWA's mission, vision, values, strategic programs, services, and commitment to women in Ethiopian media." },
-    { property: "og:title", content: "About EMWA" },
-    { property: "og:description", content: "Empowering women in and through the media since 1999." },
-  ] }),
+  head: () => createSeoHead({
+    title: "About EMWA — Ethiopian Media Women Association",
+    description: "Learn about EMWA's mission, vision, values, programs, and work advancing women in Ethiopian media.",
+    path: "/about",
+    breadcrumbs: [{ name: "About", path: "/about" }],
+  }),
   component: About,
 });
 

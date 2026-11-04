@@ -1,15 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageShell, PageHero } from "@/components/page-shell";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/terms")({
-  head: () => ({
-    meta: [
-      { title: "Terms & Conditions — EMWA" },
-      { name: "description", content: "Terms and conditions for using the EMWA website, membership, and services." },
-      { property: "og:title", content: "Terms & Conditions — EMWA" },
-      { property: "og:description", content: "Terms of use for the Ethiopian Media Women Association website and services." },
-      { name: "robots", content: "noindex" },
-    ],
+  head: () => createSeoHead({
+    title: "Terms of Use — Ethiopian Media Women Association",
+    description: "Review the terms and conditions for using the Ethiopian Media Women Association website, membership services, and directory.",
+    path: "/terms",
+    breadcrumbs: [{ name: "Terms", path: "/terms" }],
   }),
   component: Terms,
 });

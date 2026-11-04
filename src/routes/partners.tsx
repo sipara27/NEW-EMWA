@@ -3,13 +3,15 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { EMWA_PARTNERS, type EmwaPartner } from "@/lib/partners";
 import { useLanguage } from "@/lib/language-context";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/partners")({
-  head: () => ({ meta: [
-    { title: "Partners & Alliances — EMWA" },
-    { name: "description", content: "The media, government, international, and civil-society partners working with EMWA." },
-    { property: "og:title", content: "Partners & Alliances — EMWA" },
-  ] }),
+  head: () => createSeoHead({
+    title: "Partners & Alliances — Ethiopian Media Women Association",
+    description: "Meet the media organizations, public institutions, civil-society groups, and development partners working with EMWA.",
+    path: "/partners",
+    breadcrumbs: [{ name: "Partners", path: "/partners" }],
+  }),
   component: Partners,
 });
 
@@ -174,4 +176,3 @@ function Partners() {
     </PageShell>
   );
 }
-

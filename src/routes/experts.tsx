@@ -14,6 +14,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  Plus,
   Search,
   Share2,
   X,
@@ -21,28 +22,45 @@ import {
 import { PageShell } from "@/components/page-shell";
 import { API_BASE } from "@/lib/admin-api";
 import { useLanguage } from "@/lib/language-context";
+import { createSeoHead, expertProfileSlug } from "@/lib/seo";
 
 export const Route = createFileRoute("/experts")({
-  head: () => ({
-    meta: [
-      { title: "Experts Directory — EMWA" },
-      {
-        name: "description",
-        content:
-          "Searchable directory of Ethiopian women media experts by region, expertise, and category.",
-      },
-      { property: "og:title", content: "Experts Directory — EMWA" },
-      {
-        property: "og:description",
-        content:
-          "Find verified Ethiopian women experts in journalism, broadcasting, digital media, and more.",
-      },
-    ],
-  }),
+  head: ({ params }) => {
+    const isProfile = "slug" in params;
+    return createSeoHead({
+      title: "Women Experts Directory in Ethiopia | Ethiopian Media Women Association",
+      description: "Search the Ethiopian Media Women Association (EMWA) directory of approved women journalists and women media professionals in Ethiopia by name, expertise, region, or category.",
+      path: "/experts",
+      includeCanonical: !isProfile,
+      breadcrumbs: isProfile ? undefined : [{ name: "Experts Directory", path: "/experts" }],
+    });
+  },
   component: Experts,
 });
 
 const EXPERT_CATEGORIES = [
+  "Agriculture, Land Administration, Veterinary Medicine, Rural Development",
+  "Art, Fashion, Language and Literature",
+  "Business, Finance and Economics",
+  "Investment, E-Commerce, & Manufacturing",
+  "Counseling & Psychology",
+  "Development & Policy",
+  "Disability",
+  "Education",
+  "Engineering, Architecture and Construction",
+  "Environment Conservation",
+  "Gender",
+  "Health, Food Science & Nutrition",
+  "ICT and MIS",
+  "Law & Human Rights",
+  "Leadership and Good Governance",
+  "Management, Administration, & Human Resource",
+  "Media, Communication & Public Relations",
+  "Social Welfare, Child Protection, Labor",
+  "Tourism and Culture",
+] as const;
+
+const API_EXPERT_CATEGORIES = [
   "Journalism & Media",
   "Communications & Public Relations",
   "Gender Equality & Women's Rights",
@@ -57,28 +75,96 @@ const EXPERT_CATEGORIES = [
   "Agriculture & Food Systems",
   "Arts, Culture & Entertainment",
   "Social Development & Disability",
+  "Other",
 ] as const;
+type ApiExpertCategory = (typeof API_EXPERT_CATEGORIES)[number];
+
+const API_CATEGORY_BY_LABEL: Record<(typeof EXPERT_CATEGORIES)[number] | "Other", ApiExpertCategory> = {
+  "Agriculture, Land Administration, Veterinary Medicine, Rural Development": "Agriculture & Food Systems",
+  "Art, Fashion, Language and Literature": "Arts, Culture & Entertainment",
+  "Business, Finance and Economics": "Business & Economics",
+  "Investment, E-Commerce, & Manufacturing": "Business & Economics",
+  "Counseling & Psychology": "Health & Public Health",
+  "Development & Policy": "Governance & Public Policy",
+  Disability: "Social Development & Disability",
+  Education: "Education & Research",
+  "Engineering, Architecture and Construction": "Science & Technology",
+  "Environment Conservation": "Environment & Climate",
+  Gender: "Gender Equality & Women's Rights",
+  "Health, Food Science & Nutrition": "Health & Public Health",
+  "ICT and MIS": "Science & Technology",
+  "Law & Human Rights": "Law & Justice",
+  "Leadership and Good Governance": "Governance & Public Policy",
+  "Management, Administration, & Human Resource": "Business & Economics",
+  "Media, Communication & Public Relations": "Journalism & Media",
+  "Social Welfare, Child Protection, Labor": "Social Development & Disability",
+  "Tourism and Culture": "Arts, Culture & Entertainment",
+  Other: "Other",
+};
+
+const CATEGORY_LABEL_BY_API_VALUE: Record<ApiExpertCategory, string> = {
+  "Agriculture & Food Systems": "Agriculture, Land Administration, Veterinary Medicine, Rural Development",
+  "Arts, Culture & Entertainment": "Art, Fashion, Language and Literature",
+  "Business & Economics": "Business, Finance and Economics",
+  "Communications & Public Relations": "Media, Communication & Public Relations",
+  "Education & Research": "Education",
+  "Gender Equality & Women's Rights": "Gender",
+  "Governance & Public Policy": "Development & Policy",
+  "Health & Public Health": "Health, Food Science & Nutrition",
+  "Human Rights & Advocacy": "Law & Human Rights",
+  "Journalism & Media": "Media, Communication & Public Relations",
+  "Law & Justice": "Law & Human Rights",
+  "Other": "Other",
+  "Science & Technology": "Engineering, Architecture and Construction",
+  "Social Development & Disability": "Social Welfare, Child Protection, Labor",
+  "Environment & Climate": "Environment Conservation",
+};
 
 const CATEGORY_MAP_AM: Record<string, string> = {
   All: "ሁሉም",
-  "Journalism & Media": "ጋዜጠኝነት እና ሚዲያ",
-  "Communications & Public Relations": "ኮሙኒኬሽን እና ህዝብ ግንኙነት",
-  "Gender Equality & Women's Rights": "የፆታ እኩልነት እና የሴቶች መብት",
-  "Human Rights & Advocacy": "ሰብአዊ መብቶች እና ተሟጋችነት",
-  "Governance & Public Policy": "መልካም አስተዳደር እና ህዝባዊ ፖሊሲ",
-  "Law & Justice": "ህግ እና ፍትህ",
-  "Health & Public Health": "ጤና እና ህዝብ ጤና",
-  "Education & Research": "ትምህርት እና ምርምር",
-  "Business & Economics": "ንግድ እና ኢኮኖሚክስ",
-  "Science & Technology": "ሳይንስ እና ቴክኖሎጂ",
-  "Environment & Climate": "አካባቢ እና አየር ንብረት",
-  "Agriculture & Food Systems": "ግብርና እና ምግብ ስርዓቶች",
-  "Arts, Culture & Entertainment": "ኪነ-ጥበብ፣ ባህል እና መዝናኛ",
-  "Social Development & Disability": "ማህበራዊ ልማት እና አካል ጉዳተኝነት",
+  "Agriculture, Land Administration, Veterinary Medicine, Rural Development": "ግብርና፣ የመሬት አስተዳደር፣ የእንስሳት ሕክምና እና ገጠር ልማት",
+  "Art, Fashion, Language and Literature": "ሥነ ጥበብ፣ ፋሽን፣ ቋንቋ እና ሥነ ጽሑፍ",
+  "Business, Finance and Economics": "ንግድ፣ ፋይናንስ እና ኢኮኖሚክስ",
+  "Investment, E-Commerce, & Manufacturing": "ኢንቨስትመንት፣ ኢ-ኮሜርስ እና ማምረቻ",
+  "Counseling & Psychology": "ምክር እና ሳይኮሎጂ",
+  "Development & Policy": "ልማት እና ፖሊሲ",
+  Disability: "የአካል ጉዳተኝነት",
+  Education: "ትምህርት",
+  "Engineering, Architecture and Construction": "ኢንጂነሪንግ፣ አርክቴክቸር እና ግንባታ",
+  "Environment Conservation": "የአካባቢ ጥበቃ",
+  Gender: "ፆታ",
+  "Health, Food Science & Nutrition": "ጤና፣ የምግብ ሳይንስ እና ምግብ አመጋገብ",
+  "ICT and MIS": "አይሲቲ እና ኤምአይኤስ",
+  "Law & Human Rights": "ሕግ እና ሰብዓዊ መብቶች",
+  "Leadership and Good Governance": "አመራር እና መልካም አስተዳደር",
+  "Management, Administration, & Human Resource": "ማኔጅመንት፣ አስተዳደር እና የሰው ኃይል",
+  "Media, Communication & Public Relations": "ሚዲያ፣ ኮሙኒኬሽን እና ሕዝብ ግንኙነት",
+  "Social Welfare, Child Protection, Labor": "ማኅበራዊ ድጋፍ፣ የሕፃናት ጥበቃ እና ሥራ",
+  "Tourism and Culture": "ቱሪዝም እና ባህል",
   Other: "ሌሎች",
 };
 
 const CATEGORIES = ["All", ...EXPERT_CATEGORIES, "Other"];
+type DisplayExpertCategory = keyof typeof CATEGORY_MAP_AM;
+
+const getExpertCategory = (value: string): DisplayExpertCategory => {
+  if (value.startsWith("Other:")) return "Other";
+  if ((EXPERT_CATEGORIES as readonly string[]).includes(value)) {
+    return value as DisplayExpertCategory;
+  }
+  const mapped = Object.prototype.hasOwnProperty.call(CATEGORY_LABEL_BY_API_VALUE, value)
+    ? CATEGORY_LABEL_BY_API_VALUE[value as keyof typeof CATEGORY_LABEL_BY_API_VALUE]
+    : "Other";
+  return mapped in CATEGORY_MAP_AM ? (mapped as DisplayExpertCategory) : "Other";
+};
+const displayExpertCategory = (value: string, language: string) => {
+  const displayCategory = getExpertCategory(value);
+  const isOther = displayCategory === "Other";
+  const detail = value.startsWith("Other:") ? value.slice("Other:".length).trim() : "";
+  const label = language === "am" ? CATEGORY_MAP_AM[displayCategory] ?? displayCategory : displayCategory;
+  return detail ? `${label}: ${detail}` : label;
+};
+
 type Expert = {
   id?: string;
   n: string;
@@ -93,6 +179,11 @@ type Expert = {
   instagramUrl?: string;
   facebookUrl?: string;
 };
+
+const expertProfileHref = (expert: Pick<Expert, "id" | "n">) =>
+  expert.id
+    ? `/experts/${expertProfileSlug(expert.id, expert.n)}`
+    : `/experts?id=${encodeURIComponent(expert.n)}`;
 
 type ExpertApiError = {
   error?: {
@@ -155,6 +246,7 @@ function Experts() {
   const { t, language } = useLanguage();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
+  const [initialLetter, setInitialLetter] = useState("");
   const [sort, setSort] = useState<"name" | "field">("name");
   const [registerOpen, setRegisterOpen] = useState(false);
   const [selected, setSelected] = useState<Expert | null>(null);
@@ -166,6 +258,7 @@ function Experts() {
   const [expertsLoading, setExpertsLoading] = useState(true);
   const [expertsError, setExpertsError] = useState("");
   const [bioText, setBioText] = useState("");
+  const [registrationCategory, setRegistrationCategory] = useState("");
 
   const bioWordCount = useMemo(() => {
     const trimmed = bioText.trim();
@@ -337,6 +430,20 @@ function Experts() {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
+    const apiCategory =
+      API_CATEGORY_BY_LABEL[registrationCategory as keyof typeof API_CATEGORY_BY_LABEL];
+    if (!apiCategory) {
+      setSubmitError(t("Please select a valid expert category.", "እባክዎ ትክክለኛ የባለሙያ ዘርፍ ይምረጡ።"));
+      return;
+    }
+    formData.set("primaryExpertise", apiCategory);
+    if (registrationCategory === "Other") {
+      const otherCategory = String(formData.get("otherExpertise") ?? "").trim();
+      if (!otherCategory) {
+        setSubmitError(t("Please describe your area of expertise.", "እባክዎ የሙያ ዘርፍዎን ይግለጹ።"));
+        return;
+      }
+    }
     const email = String(formData.get("email") ?? "").trim();
     const phone = String(formData.get("phone") ?? "").trim();
 
@@ -376,6 +483,7 @@ function Experts() {
 
       form.reset();
       setBioText("");
+      setRegistrationCategory("");
       setSubmitted(true);
     } catch (cause) {
       setSubmitError(
@@ -403,14 +511,20 @@ function Experts() {
     return experts
       .filter(
         (expert) =>
-          (category === "All" || expert.c === category) &&
+          (category === "All" || getExpertCategory(expert.c) === category) &&
+          (!initialLetter || expert.n.trim().toLocaleUpperCase().startsWith(initialLetter)) &&
           (!needle ||
             [expert.n, expert.f, expert.r, expert.c].some((value) =>
               value.toLowerCase().includes(needle),
             )),
       )
       .sort((a, b) => (sort === "name" ? a.n.localeCompare(b.n) : a.f.localeCompare(b.f)));
-  }, [experts, query, category, sort]);
+  }, [experts, query, category, initialLetter, sort]);
+
+  const nameSuggestions = useMemo(
+    () => [...new Set(experts.map((expert) => expert.n.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    [experts],
+  );
 
   const featuredExpert = useMemo(
     () => experts.find((expert) => Boolean(expert.img)) ?? experts[0],
@@ -595,7 +709,7 @@ function Experts() {
 
               <h2 className="expert-detail-section-title">{t("Core Competencies & Services", "ዋና ዋና ሙያዎች እና አገልግሎቶች")}</h2>
               <div className="expert-detail-tags">
-                <span>{language === "am" ? CATEGORY_MAP_AM[selected.c] ?? selected.c : selected.c}</span>
+                <span>{displayExpertCategory(selected.c, language)}</span>
                 <span>{t("Available for interviews", "ለቃለ-መጠይቅ የሚገኙ")}</span>
                 <span>{t("Mentorship & Training", "የአማካሪነትና ስልጠና ድጋፍ")}</span>
                 <span>{t("Panelist & Keynote", "የውይይት ተናጋሪ")}</span>
@@ -661,13 +775,11 @@ function Experts() {
               <div className="expert-detail-related-grid">
                 {relatedExperts.map((exp) => (
                   <article className="expert-card" key={exp.id ?? exp.n}>
-                    <button
-                      type="button"
+                    <a
                       className="expert-card-image"
-                      onClick={() => {
-                        selectExpert(exp);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
+                      href={expertProfileHref(exp)}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       aria-label={`View ${exp.n}'s profile`}
                     >
                       <span className="grid size-full place-items-center bg-muted font-display text-7xl text-primary/35">
@@ -684,11 +796,11 @@ function Experts() {
                           }}
                         />
                       )}
-                      <span className="expert-card-category">{language === "am" ? CATEGORY_MAP_AM[exp.c] ?? exp.c : exp.c}</span>
+                      <span className="expert-card-category">{displayExpertCategory(exp.c, language)}</span>
                       <span className="expert-card-open">
                         <ArrowUpRight aria-hidden="true" />
                       </span>
-                    </button>
+                    </a>
                     <div className="expert-card-copy">
                       <p className="expert-card-verified">
                         <BadgeCheck aria-hidden="true" /> {t("EMWA verified", "የEMWA የተረጋገጠ")}
@@ -698,15 +810,13 @@ function Experts() {
                       <p className="expert-card-region">
                         <MapPin aria-hidden="true" /> {exp.r}
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          selectExpert(exp);
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }}
+                      <a
+                        href={expertProfileHref(exp)}
+                        target="_blank"
+                        rel="noopener noreferrer"
                       >
                         {t("View expertise", "ሙያን ይመልከቱ")} <ArrowUpRight aria-hidden="true" />
-                      </button>
+                      </a>
                     </div>
                   </article>
                 ))}
@@ -773,17 +883,12 @@ function Experts() {
             <button onClick={() => setRegisterOpen(true)}>{t("Submit your profile", "መገለጫዎን ያስገቡ")}</button>
           </div>
         </div>
-        <button
-          type="button"
+        <a
           className="experts-hero-portrait"
-          onClick={() => {
-            if (featuredExpert) {
-              selectExpert(featuredExpert);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }
-          }}
-          disabled={!featuredExpert}
-          style={{ cursor: featuredExpert ? "pointer" : "default", textAlign: "left", background: "none", border: "none", padding: 0 }}
+          href={featuredExpert ? expertProfileHref(featuredExpert) : undefined}
+          target={featuredExpert ? "_blank" : undefined}
+          rel={featuredExpert ? "noopener noreferrer" : undefined}
+          aria-disabled={!featuredExpert}
           aria-label={featuredExpert ? `View ${featuredExpert.n}'s profile` : undefined}
         >
           <span className="grid size-full place-items-center bg-muted font-display text-9xl text-primary/35">
@@ -805,14 +910,14 @@ function Experts() {
           <div className="experts-hero-dossier">
             <span>{featuredExpert?.n || t("Featured expert", "ልዩ ባለሙያ")}</span>
             <strong>
-              {language === "am" && CATEGORY_MAP_AM[featuredExpert?.c] ? CATEGORY_MAP_AM[featuredExpert?.c] : featuredExpert?.c || t("Media expertise", "የሚዲያ ሙያ")}
+              {featuredExpert ? displayExpertCategory(featuredExpert.c, language) : t("Media expertise", "የሚዲያ ሙያ")}
             </strong>
             <p>{featuredExpert?.r || "ኢትዮጵያ"}</p>
           </div>
           <span className="experts-hero-index" aria-hidden="true">
             E/01
           </span>
-        </button>
+        </a>
       </section>
 
       <section
@@ -830,6 +935,16 @@ function Experts() {
               "Search by discipline, name, or region to find a source, speaker, mentor, trainer, or collaborator.",
               "ምንጭ፣ ተናጋሪ፣ አማካሪ፣ አሰልጣኝ ወይም አጋር ለማግኘት በዘርፍ፣ በስም ወይም በክልል ይፈልጉ።",
             )}
+            {" "}
+            {t(
+              "The Ethiopian Media Women Association (EMWA) directory features public, approved profiles of women journalists and professionals in Ethiopia. Explore EMWA's",
+              "የኢትዮጵያ የሴቶች ሚዲያ ማህበር (EMWA) ማውጫ በኢትዮጵያ ያሉ ሴት ጋዜጠኞችንና ባለሙያዎችን የተፈቀዱ ይፋዊ መገለጫዎች ያካትታል። የEMWAን",
+            )}{" "}
+            <a href="/about">{t("mission", "ተልዕኮ")}</a>,{" "}
+            <a href="/programs">{t("programs", "ፕሮግራሞች")}</a>,{" "}
+            <a href="/updates">{t("news", "ዜናዎች")}</a>,{" "}
+            <a href="/resources">{t("resources", "ሀብቶች")}</a>
+            {t(" and directory.", " እና ማውጫ ያስሱ።")}
           </p>
         </header>
 
@@ -841,8 +956,13 @@ function Experts() {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              list="emwa-expert-name-suggestions"
+              autoComplete="on"
               placeholder={t("Search name, skill, region...", "በስም፣ በሙያ፣ በክልል ይፈልጉ...")}
             />
+            <datalist id="emwa-expert-name-suggestions">
+              {nameSuggestions.map((name) => <option key={name} value={name} />)}
+            </datalist>
           </label>
           <label className="experts-sort">
             <span>{t("Category", "ዘርፍ")}</span>
@@ -852,7 +972,7 @@ function Experts() {
                   {language === "am" ? CATEGORY_MAP_AM[item] ?? item : item} (
                   {item === "All"
                     ? experts.length
-                    : experts.filter((expert) => expert.c === item).length}
+                    : experts.filter((expert) => getExpertCategory(expert.c) === item).length}
                   )
                 </option>
               ))}
@@ -871,6 +991,29 @@ function Experts() {
             <ChevronDown aria-hidden="true" />
           </label>
         </div>
+
+        <nav className="experts-alphabet" aria-label={t("Browse experts alphabetically", "ባለሙያዎችን በፊደል ያስሱ")}>
+          <span>{t("Browse A–Z", "ከ A–Z ያስሱ")}</span>
+          <button
+            type="button"
+            className={!initialLetter ? "is-active" : ""}
+            aria-pressed={!initialLetter}
+            onClick={() => setInitialLetter("")}
+          >
+            {t("All", "ሁሉም")}
+          </button>
+          {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((letter) => (
+            <button
+              type="button"
+              key={letter}
+              className={initialLetter === letter ? "is-active" : ""}
+              aria-pressed={initialLetter === letter}
+              onClick={() => setInitialLetter(initialLetter === letter ? "" : letter)}
+            >
+              {letter}
+            </button>
+          ))}
+        </nav>
 
         <div className="experts-results-bar">
           <p>
@@ -897,7 +1040,14 @@ function Experts() {
             <button onClick={downloadExperts} disabled={!experts.length}>
               <Download aria-hidden="true" /> {t("Download all experts", "ሁሉንም ባለሙያዎች ያውርዱ")}
             </button>
-            <button onClick={() => setRegisterOpen(true)}>{t("Add your expertise", "ሙያዎን ያክሉ")}</button>
+            <button
+              type="button"
+              className="experts-add-button"
+              onClick={() => setRegisterOpen(true)}
+            >
+              <Plus aria-hidden="true" />
+              {t("Add your expertise", "ሙያዎን ያክሉ")}
+            </button>
           </div>
         </div>
 
@@ -916,14 +1066,9 @@ function Experts() {
                 <article className="expert-card" key={expert.id ?? expert.n}>
                   <a
                     className="expert-card-image"
-                    href={`/experts?id=${encodeURIComponent(expert.id ?? expert.n)}`}
-                    onClick={(e) => {
-                      if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
-                        e.preventDefault();
-                        selectExpert(expert);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }
-                    }}
+                    href={expertProfileHref(expert)}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     aria-label={`View ${expert.n}'s profile`}
                   >
                     <span className="grid size-full place-items-center bg-muted font-display text-7xl text-primary/35">
@@ -940,7 +1085,7 @@ function Experts() {
                         }}
                       />
                     )}
-                    <span className="expert-card-category">{language === "am" ? CATEGORY_MAP_AM[expert.c] ?? expert.c : expert.c}</span>
+                    <span className="expert-card-category">{displayExpertCategory(expert.c, language)}</span>
                     <span className="expert-card-open">
                       <ArrowUpRight aria-hidden="true" />
                     </span>
@@ -954,15 +1099,13 @@ function Experts() {
                     <p className="expert-card-region">
                       <MapPin aria-hidden="true" /> {expert.r}
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        selectExpert(expert);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
+                    <a
+                      href={expertProfileHref(expert)}
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
                       {t("View expertise", "ሙያን ይመልከቱ")} <ArrowUpRight aria-hidden="true" />
-                    </button>
+                    </a>
                   </div>
                 </article>
             ))}
@@ -980,6 +1123,7 @@ function Experts() {
               onClick={() => {
                 setQuery("");
                 setCategory("All");
+                setInitialLetter("");
               }}
             >
               {t("Reset directory", "ማውጫውን እንደገና አስጀምር")}
@@ -1085,7 +1229,12 @@ function Experts() {
                     </label>
                     <label>
                       <span>{t("Expert category *", "የባለሙያ ዘርፍ *")}</span>
-                      <select name="primaryExpertise" required defaultValue="">
+                      <select
+                        name="primaryExpertise"
+                        required
+                        value={registrationCategory}
+                        onChange={(event) => setRegistrationCategory(event.target.value)}
+                      >
                         <option value="" disabled>
                           {t("Select a category", "ዘርፍ ይምረጡ")}
                         </option>
@@ -1096,6 +1245,19 @@ function Experts() {
                         ))}
                       </select>
                     </label>
+                    {registrationCategory === "Other" && (
+                      <label className="expert-form-wide">
+                        <span>{t("Please specify your area of expertise *", "እባክዎ የሙያ ዘርፍዎን ይግለጹ *")}</span>
+                        <textarea
+                          name="otherExpertise"
+                          required
+                          minLength={2}
+                          maxLength={150}
+                          rows={3}
+                          placeholder={t("Enter your expert category", "የባለሙያ ዘርፍዎን ያስገቡ")}
+                        />
+                      </label>
+                    )}
                     <label>
                       <span>{t("Location *", "አካባቢ / ክልል *")}</span>
                       <input

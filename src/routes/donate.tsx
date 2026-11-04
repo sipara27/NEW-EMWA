@@ -23,23 +23,14 @@ import { PageShell } from "@/components/page-shell";
 import { useLanguage } from "@/lib/language-context";
 import { toast } from "sonner";
 import { initializeDonation } from "@/lib/donation.functions";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/donate")({
-  head: () => ({
-    meta: [
-      { title: "Donate & Support — EMWA" },
-      {
-        name: "description",
-        content:
-          "Support the Ethiopian Media Women Association. Your contribution empowers female journalists, provides safety legal funds, and enhances media diversity in Ethiopia.",
-      },
-      { property: "og:title", content: "Donate to EMWA — Ethiopian Media Women Association" },
-      {
-        property: "og:description",
-        content:
-          "Empower women journalists through training, emergency safety funds, and investigative reporting grants.",
-      },
-    ],
+  head: () => createSeoHead({
+    title: "Donate to EMWA — Ethiopian Media Women Association",
+    description: "Support the Ethiopian Media Women Association's journalism training, safety assistance, investigative reporting, and gender equality programs.",
+    path: "/donate",
+    breadcrumbs: [{ name: "Donate", path: "/donate" }],
   }),
   component: DonatePage,
 });

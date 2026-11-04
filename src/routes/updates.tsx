@@ -15,24 +15,26 @@ import {
   X,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
-import { API_BASE } from "@/lib/admin-api";
+import { API_BASE, resolveApiMediaUrl } from "@/lib/admin-api";
 import { useLanguage } from "@/lib/language-context";
+import { createSeoHead, updateArticleSlug } from "@/lib/seo";
+import newsroomImage from "@/assets/newsroom.jpg";
 
 export const Route = createFileRoute("/updates")({
   validateSearch: (search: Record<string, unknown>): { story?: string; event?: string } => ({
     story: typeof search.story === "string" ? search.story : undefined,
     event: typeof search.event === "string" ? search.event : undefined,
   }),
-  head: () => ({
-    meta: [
-      { title: "Updates & Events — EMWA" },
-      {
-        name: "description",
-        content: "EMWA updates, analysis, press releases, events, and opportunities.",
-      },
-      { property: "og:title", content: "Updates & Events — EMWA" },
-    ],
-  }),
+  head: ({ params }) => {
+    const isStory = "slug" in params;
+    return createSeoHead({
+      title: "News, Updates & Events — Ethiopian Media Women Association",
+      description: "Read news, press releases, articles, and event announcements from the Ethiopian Media Women Association newsroom.",
+      path: "/updates",
+      includeCanonical: !isStory,
+      breadcrumbs: isStory ? undefined : [{ name: "News and updates", path: "/updates" }],
+    });
+  },
   component: Updates,
 });
 
@@ -57,6 +59,7 @@ type StoryBlock = {
 };
 
 type Story = {
+  id?: string;
   d: string;
   t: (typeof TABS)[number];
   h: string;
@@ -71,6 +74,11 @@ type Story = {
   featured?: boolean;
   blocks?: StoryBlock[];
 };
+
+const storyHref = (story: Pick<Story, "id" | "slug" | "h">) =>
+  story.slug?.trim() && story.h.trim()
+    ? `/updates/${encodeURIComponent(updateArticleSlug(story.slug, story.h, story.id))}`
+    : `/updates?story=${encodeURIComponent(story.h)}`;
 
 type PublicEvent = {
   id?: string;
@@ -94,32 +102,16 @@ type PublicEvent = {
   registrationUrl?: string;
 };
 
-const NEWS_IMG_FALLBACK =
-  "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80";
+const NEWS_IMG_FALLBACK = newsroomImage;
 
-const resolveMediaUrl = (url?: string | null, fallback = NEWS_IMG_FALLBACK) => {
-  if (!url) return fallback;
-  const str = String(url).trim();
-  if (!str) return fallback;
-  if (str.startsWith("http://") || str.startsWith("https://") || str.startsWith("data:") || str.startsWith("blob:")) {
-    return str;
-  }
-  try {
-    const origin =
-      typeof window !== "undefined" && !/^https?:\/\//i.test(API_BASE)
-        ? window.location.origin
-        : /^https?:\/\//i.test(API_BASE)
-          ? new URL(API_BASE).origin
-          : "";
-    const cleanPath = str.startsWith("/") ? str : `/${str}`;
-    return origin ? `${origin}${cleanPath}` : cleanPath;
-  } catch {
-    return str;
-  }
-};
+const resolveMediaUrl = (url?: string | null, fallback = NEWS_IMG_FALLBACK) =>
+  resolveApiMediaUrl(url) || fallback;
 
 const useNewsImageFallback = (event: React.SyntheticEvent<HTMLImageElement>) => {
-  event.currentTarget.src = NEWS_IMG_FALLBACK;
+  if (event.currentTarget.dataset.fallback !== "true") {
+    event.currentTarget.dataset.fallback = "true";
+    event.currentTarget.src = NEWS_IMG_FALLBACK;
+  }
 };
 
 function Updates() {
@@ -166,6 +158,7 @@ function Updates() {
         if (payload.data) {
           const row = payload.data;
           const detail: Story = {
+            id: row.id ? String(row.id) : undefined,
             d: new Intl.DateTimeFormat("en-GB", {
               day: "2-digit",
               month: "short",
@@ -217,6 +210,7 @@ function Updates() {
         if (updatesResult.status === "fulfilled" && updatesResult.value.ok) {
           const updatesPayload = await updatesResult.value.json();
           const loaded = (Array.isArray(updatesPayload.data) ? updatesPayload.data : []).map((row: Record<string, unknown>) => ({
+            id: row.id ? String(row.id) : undefined,
             d: new Intl.DateTimeFormat("en-GB", {
               day: "2-digit",
               month: "short",
@@ -500,7 +494,7 @@ function Updates() {
               <h2>{language === "am" && lead.hAm ? lead.hAm : lead.h}</h2>
               <p>{language === "am" && lead.eAm ? lead.eAm : lead.e}</p>
               <a
-                href={`/updates?story=${encodeURIComponent(lead.slug || lead.h)}`}
+                href={storyHref(lead)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg bg-white/90 px-4 py-2.5 font-bold text-black hover:bg-white transition"
@@ -568,7 +562,7 @@ function Updates() {
                 key={story.h}
               >
                 <a
-                  href={`/updates?story=${encodeURIComponent(story.slug || story.h)}`}
+                  href={storyHref(story)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="updates2-card-image block"
@@ -588,7 +582,7 @@ function Updates() {
                   </div>
                   <h3>
                     <a
-                      href={`/updates?story=${encodeURIComponent(story.slug || story.h)}`}
+                      href={storyHref(story)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:text-[#8c2d3c] transition-colors"
@@ -598,7 +592,7 @@ function Updates() {
                   </h3>
                   <p>{language === "am" && story.eAm ? story.eAm : story.e}</p>
                   <a
-                    href={`/updates?story=${encodeURIComponent(story.slug || story.h)}`}
+                    href={storyHref(story)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 font-bold text-sm text-[#8c2d3c] hover:underline mt-auto pt-2"

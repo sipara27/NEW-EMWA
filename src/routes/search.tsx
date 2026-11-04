@@ -2,18 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageShell, PageHero } from "@/components/page-shell";
 import { useMemo, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
+import { createSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/search")({
   validateSearch: (search: Record<string, unknown>): { q?: string } => ({
     q: typeof search.q === "string" && search.q ? search.q : undefined,
   }),
-  head: () => ({
-    meta: [
-      { title: "Search — EMWA" },
-      { name: "description", content: "Search across EMWA pages, experts, updates, and resources." },
-      { property: "og:title", content: "Search — EMWA" },
-      { property: "og:description", content: "Global search across the EMWA website." },
-    ],
+  head: () => createSeoHead({
+    title: "Search — Ethiopian Media Women Association",
+    description: "Search the Ethiopian Media Women Association website for programs, experts, news, and resources.",
+    path: "/search",
+    noIndex: true,
   }),
   component: SearchPage,
 });
